@@ -150,5 +150,5 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
 
 
 if __name__ == "__main__":
-    # main(women=True)
     main(women=False)
+    main(women=True)

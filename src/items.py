@@ -42,7 +42,7 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
         "price": float(item.price.amount),
         "currency": item.price.currency_code,
         "brand": item.brand_title,
-        "size": item.size_title,
+        "size": _parse_size(item.size_title),
         "condition": item.status,
         "is_available": True,
         "created_at": created_at,
@@ -59,3 +59,7 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
     }
 
     return item_entry, image_entry
+
+
+def _parse_size(size: str) -> str:
+    return size.split(" / ")[0]

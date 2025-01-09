@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("../")
 
-from typing import List
+from typing import List, Tuple, Dict
 
 import tqdm, json, os
 from vinted import Vinted
@@ -10,9 +10,10 @@ import src
 
 
 FILTER_BATCH_SIZE = 3
+UPLOAD_EVERY = 500
 
 
-def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
+def initialize(women: bool, domain: str, filter_by: List[str]) -> Tuple: 
     secrets = json.loads(os.getenv("SECRETS_JSON"))
     gcp_credentials = secrets.get("GCP_CREDENTIALS")
     gcp_credentials["private_key"] = gcp_credentials["private_key"].replace("\\n", "\n")
@@ -28,13 +29,41 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
         conditions=[f"women = {women}", "is_valid = TRUE"],
     )
 
+    return bq_client, vinted_client, filter_by, catalogs
+
+
+def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, bool]: 
+    uploaded = False
+
+    if src.bigquery.upload(
+        client=bq_client,
+        dataset_id=src.enums.DATASET_ID,
+        table_id=src.enums.STAGING_ITEM_TABLE_ID,
+        rows=items,
+    ):
+        inserted += len(items)
+
+        if src.bigquery.upload(
+            client=bq_client,
+            dataset_id=src.enums.DATASET_ID,
+            table_id=src.enums.STAGING_IMAGE_TABLE_ID,
+            rows=images,
+        ):
+            uploaded = True
+
+    return inserted, uploaded
+
+
+def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
+    global bq_client, vinted_client
+    bq_client, vinted_client, filter_by, catalogs = initialize(women, domain, filter_by)
+
+    print(f"women: {women} | filter_by: {filter_by} | catalogs: {len(catalogs)}")
     loop = tqdm.tqdm(iterable=catalogs, total=len(catalogs))
-    inserted, n, n_success = 0, 0, 0
+    inserted, n = 0, 0
 
     for entry in loop:
-        items, images = [], []
-        item_success, image_success = 0, 0
-
+        items, images = [], []        
         catalog_title = entry.get("title")
         catalog_id = entry.get("id")
 
@@ -58,70 +87,60 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
                     f"Items: {len(response.items)}"
                 )
 
-                if len(response.items) == 0:
-                    continue
-
                 for item in response.items:
+                    uploaded = False
+                    n += 1
+
                     try:
                         item_entry, image_entry = src.items.parse(item, catalog_id)
                         items.append(item_entry)
                         images.append(image_entry)
 
-                    except Exception as e:
+                    except:
                         continue
 
-                if src.bigquery.upload(
-                    client=bq_client,
-                    dataset_id=src.enums.DATASET_ID,
-                    table_id=src.enums.STAGING_ITEM_TABLE_ID,
-                    rows=items,
-                ):
-                    inserted += len(items)
-                    item_success = True
-                    items = []
+                    if n % UPLOAD_EVERY == 0:
+                        inserted, uploaded = upload(inserted, items, images)
+                        items, images = [], []
 
-                    if src.bigquery.upload(
-                        client=bq_client,
-                        dataset_id=src.enums.DATASET_ID,
-                        table_id=src.enums.STAGING_IMAGE_TABLE_ID,
-                        rows=images,
-                    ):
-                        images = []
-                        image_success = True
+                    loop.set_description(
+                        f"Women: {women} | "
+                        f"Catalog: {catalog_title} | "
+                        f"Filter: {filter_key} | "
+                        f"Processed: {n} | "
+                        f"Upload: {uploaded} | "
+                        f"Inserted rows: {inserted} | "
+                    )
 
-                n_success += int(item_success and image_success)
-                n += 1
+    if len(items) > 0 and len(images) > 0:
+        inserted, uploaded = upload(inserted, items, images)
+        loop.set_description(
+            f"Upload: {uploaded} | "
+            f"Inserted rows: {inserted} | "
+        )
 
-                loop.set_description(
-                    f"Women: {women} | "
-                    f"Catalog: {catalog_title} | "
-                    f"Filter: {filter_key} | "
-                    f"Item: {item_success} | "
-                    f"Image: {image_success} | "
-                    f"Total: {inserted} | "
-                    f"Success: {n_success/n:.2f}"
-                )
+    for table_id, reference_field in zip(
+        [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], 
+        ["url", "vinted_id"]
+    ):
+        num_inserted = src.bigquery.insert_staging_rows(
+            client=bq_client,
+            dataset_id=src.enums.DATASET_ID,
+            table_id=table_id,
+            reference_field=reference_field,
+        )
 
-        for table_id, reference_field in zip(
-            [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], 
-            ["url", "vinted_id"]
-        ):
-            num_inserted = src.bigquery.insert_staging_rows(
-                client=bq_client,
-                dataset_id=src.enums.DATASET_ID,
-                table_id=table_id,
-                reference_field=reference_field,
-            )
+        loop.set_description(
+            f"Women: {women} | "
+            f"Catalog: {catalog_title} | "
+            f"Filter: {filter_key} | "
+            f"Table: {table_id} | "
+            f"Inserted: {num_inserted} | "
+        )
 
-            loop.set_description(
-                f"Women: {women} | "
-                f"Catalog: {catalog_title} | "
-                f"Filter: {filter_key} | "
-                f"Table: {table_id} | "
-                f"Inserted: {num_inserted} | "
-            )
+        if num_inserted == -1:
+            return 
 
-    for table_id in [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID]:
         if src.bigquery.restart_staging_table(
             client=bq_client,
             dataset_id=src.enums.DATASET_ID,
@@ -131,5 +150,5 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
 
 
 if __name__ == "__main__":
-    main(women=True)
+    # main(women=True)
     main(women=False)

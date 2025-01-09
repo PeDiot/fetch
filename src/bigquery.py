@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Iterable, Tuple
 
 from google.oauth2 import service_account
 from google.cloud import bigquery
@@ -47,13 +47,28 @@ def load_table(
         return results
 
 
-def upload(
-    client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]
-) -> bool:
-    table_ref = client.get_table(f"{PROJECT_ID}.{dataset_id}.{table_id}")
-    output = client.insert_rows(table=table_ref, rows=rows)
+def upload(client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]) -> bool:
+    table_path = f"`{PROJECT_ID}.{dataset_id}.{table_id}`"
 
-    return len(output) == 0
+    fields = f"{tuple(rows[0].keys())}".replace("'", "")
+    values = [f"{_preprocess_null_values(row.values())}" for row in rows]
+    values = "\n\t" + ",\n\t".join(values)
+
+    query = f""" 
+    INSERT INTO 
+    {table_path}
+    {fields}
+    VALUES {values}; 
+    """
+    query = query.replace("'NULL'", "NULL")
+
+    try:
+        client.query(query).result()
+        return True
+
+    except Exception as e:
+        print(e)
+        return False
 
 
 def insert_staging_rows(
@@ -91,3 +106,7 @@ def restart_staging_table(
     except Exception as e:
         print(e)
         return False
+
+
+def _preprocess_null_values(values: Iterable) -> Tuple:
+    return tuple([value if value is not None else "NULL" for value in values])

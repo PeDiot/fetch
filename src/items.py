@@ -35,7 +35,7 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
 
     item_entry = {
         "id": item_id,
-        "vinted_id": item.id,
+        "vinted_id": str(item.id),
         "catalog_id": catalog_id,
         "title": item.title,
         "url": item.url,
@@ -51,7 +51,7 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
 
     image_entry = {
         "id": str(uuid.uuid4()),
-        "vinted_id": item.id,
+        "vinted_id": str(item.id),
         "url": item.photo.url,
         "nobg": False,
         "size": "original",

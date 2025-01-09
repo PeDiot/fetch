@@ -113,21 +113,21 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
                 reference_field=reference_field,
             )
 
-            if num_inserted > -1:
-                restart_success = src.bigquery.restart_staging_table(
-                    client=bq_client,
-                    dataset_id=src.enums.DATASET_ID,
-                    table_id=table_id,
-                )
-
             loop.set_description(
                 f"Women: {women} | "
                 f"Catalog: {catalog_title} | "
                 f"Filter: {filter_key} | "
                 f"Table: {table_id} | "
                 f"Inserted: {num_inserted} | "
-                f"Staging restart: {restart_success}"
             )
+
+    for table_id in [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID]:
+        if src.bigquery.restart_staging_table(
+            client=bq_client,
+            dataset_id=src.enums.DATASET_ID,
+            table_id=table_id,
+        ):
+            loop.set_description(f"Staging restart: {table_id}")
 
 
 if __name__ == "__main__":

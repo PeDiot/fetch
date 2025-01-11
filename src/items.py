@@ -62,4 +62,4 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
 
 
 def _parse_size(size: str) -> str:
-    return size.split(" / ")[0]
+    return size.split(" / ")[0].replace(",", ".")

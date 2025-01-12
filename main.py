@@ -12,7 +12,7 @@ import src
 DOMAIN = "fr"
 FILTER_BATCH_SIZE = 3
 UPLOAD_EVERY = 500
-ONLY_DESIGNERS = True
+ONLY_DESIGNERS = False
 FILTER_BY_DEFAULT = []
 
 
@@ -71,7 +71,7 @@ def main(women: bool):
 
     print(f"women: {women} | filter_by: {filter_by} | catalogs: {len(catalogs)}")
     loop = tqdm.tqdm(iterable=catalogs, total=len(catalogs))
-    inserted, n = 0, 0
+    visited, inserted, n = [], 0, 0
 
     for entry in loop:
         items, images = [], []
@@ -107,8 +107,14 @@ def main(women: bool):
 
                     try:
                         item_entry, image_entry = src.items.parse(item, catalog_id)
+                        item_id = item_entry.get("vinted_id")
+
+                        if item_id in visited:
+                            continue
+
                         items.append(item_entry)
                         images.append(image_entry)
+                        visited.append(item_id)
 
                     except:
                         continue

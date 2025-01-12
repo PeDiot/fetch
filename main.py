@@ -9,27 +9,37 @@ from vinted import Vinted
 import src
 
 
+DOMAIN = "fr"
 FILTER_BATCH_SIZE = 3
 UPLOAD_EVERY = 500
+ONLY_DESIGNERS = True
+FILTER_BY_DEFAULT = []
 
 
-def initialize(women: bool, domain: str, filter_by: List[str]) -> Tuple: 
+def initialize() -> Tuple: 
     secrets = json.loads(os.getenv("SECRETS_JSON"))
     gcp_credentials = secrets.get("GCP_CREDENTIALS")
     gcp_credentials["private_key"] = gcp_credentials["private_key"].replace("\\n", "\n")
 
     bq_client = src.bigquery.init_client(credentials_dict=gcp_credentials)
-    vinted_client = Vinted(domain=domain)
+    vinted_client = Vinted(domain=DOMAIN)
+    filter_by = [None] if len(FILTER_BY_DEFAULT) == 0 else FILTER_BY_DEFAULT
 
-    filter_by = [None] if len(filter_by) == 0 else filter_by
+    return bq_client, vinted_client, filter_by
 
-    catalogs = src.bigquery.load_table(
+
+def load_catalogs(women: bool) -> List[Dict]:
+    conditions = [f"women = {women}", "is_valid = TRUE"]
+
+    if ONLY_DESIGNERS:
+        catalog_ids = ",".join(map(str, src.enums.DESIGNER_CATALOG_IDS))
+        conditions.append(f"id IN ({catalog_ids})")
+
+    return src.bigquery.load_table(
         client=bq_client,
         table_id=src.enums.CATALOG_TABLE_ID,
-        conditions=[f"women = {women}", "is_valid = TRUE"],
+        conditions=conditions,
     )
-
-    return bq_client, vinted_client, filter_by, catalogs
 
 
 def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, bool]: 
@@ -54,9 +64,10 @@ def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, b
     return inserted, uploaded
 
 
-def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
+def main(women: bool):
     global bq_client, vinted_client
-    bq_client, vinted_client, filter_by, catalogs = initialize(women, domain, filter_by)
+    bq_client, vinted_client, filter_by = initialize()
+    catalogs = load_catalogs(women)
 
     print(f"women: {women} | filter_by: {filter_by} | catalogs: {len(catalogs)}")
     loop = tqdm.tqdm(iterable=catalogs, total=len(catalogs))
@@ -69,8 +80,9 @@ def main(women: bool, domain: str = "fr", filter_by: List[str] = []):
 
         filters_response = vinted_client.catalog_filters(catalog_ids=[catalog_id])
         filters = src.filters.parse(filters_response)
+        filter_by_updated = ["brand"] if catalog_id in src.enums.DESIGNER_CATALOG_IDS else filter_by
 
-        for filter_key in filter_by:
+        for filter_key in filter_by_updated:
             search_kwargs_list = src.items.prepare_search_kwargs(
                 catalog_id=catalog_id,
                 filter_key=filter_key,

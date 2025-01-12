@@ -16,7 +16,7 @@ ONLY_DESIGNERS = True
 FILTER_BY_DEFAULT = []
 
 
-def initialize() -> Tuple: 
+def initialize() -> Tuple:
     secrets = json.loads(os.getenv("SECRETS_JSON"))
     gcp_credentials = secrets.get("GCP_CREDENTIALS")
     gcp_credentials["private_key"] = gcp_credentials["private_key"].replace("\\n", "\n")
@@ -42,7 +42,7 @@ def load_catalogs(women: bool) -> List[Dict]:
     )
 
 
-def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, bool]: 
+def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, bool]:
     uploaded = False
 
     if src.bigquery.upload(
@@ -74,13 +74,15 @@ def main(women: bool):
     inserted, n = 0, 0
 
     for entry in loop:
-        items, images = [], []        
+        items, images = [], []
         catalog_title = entry.get("title")
         catalog_id = entry.get("id")
 
         filters_response = vinted_client.catalog_filters(catalog_ids=[catalog_id])
         filters = src.filters.parse(filters_response)
-        filter_by_updated = ["brand"] if catalog_id in src.enums.DESIGNER_CATALOG_IDS else filter_by
+        filter_by_updated = (
+            ["brand"] if catalog_id in src.enums.DESIGNER_CATALOG_IDS else filter_by
+        )
 
         for filter_key in filter_by_updated:
             search_kwargs_list = src.items.prepare_search_kwargs(
@@ -126,14 +128,10 @@ def main(women: bool):
 
     if len(items) > 0 and len(images) > 0:
         inserted, uploaded = upload(inserted, items, images)
-        loop.set_description(
-            f"Upload: {uploaded} | "
-            f"Inserted rows: {inserted} | "
-        )
+        loop.set_description(f"Upload: {uploaded} | " f"Inserted rows: {inserted} | ")
 
     for table_id, reference_field in zip(
-        [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], 
-        ["url", "vinted_id"]
+        [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], ["url", "vinted_id"]
     ):
         num_inserted = src.bigquery.insert_staging_rows(
             client=bq_client,
@@ -151,7 +149,7 @@ def main(women: bool):
         )
 
         if num_inserted == -1:
-            return 
+            return
 
         if src.bigquery.restart_staging_table(
             client=bq_client,

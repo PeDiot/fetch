@@ -47,7 +47,9 @@ def load_table(
         return results
 
 
-def upload(client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]) -> bool:
+def upload(
+    client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]
+) -> bool:
     table_path = f"`{PROJECT_ID}.{dataset_id}.{table_id}`"
 
     fields = f"{tuple(rows[0].keys())}".replace("'", "")
@@ -84,7 +86,7 @@ def insert_staging_rows(
         query_job = client.query(query)
         query_job.result()
         return query_job.num_dml_affected_rows
-    
+
     except Exception as e:
         print(e)
         return -1

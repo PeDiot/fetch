@@ -14,3 +14,6 @@ STAGING_IMAGE_TABLE_ID = "image_staging"
 
 CATALOG_FIELDS = ["id", "title", "code", "url", "women"]
 VALID_FILTER_KEYS = ["brand", "color", "material", "pattern"]
+
+
+DESIGNER_CATALOG_IDS = [2984, 2985, 2986, 2987, 2990, 2991, 2992]

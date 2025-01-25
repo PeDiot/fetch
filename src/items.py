@@ -5,7 +5,7 @@ from vinted.models.items import Item
 from copy import deepcopy
 
 from .utils import create_batches
-from .enums import N_ITEMS_MAX
+from .enums import N_ITEMS_MAX, VINTAGE_BRAND_ID
 
 
 def prepare_search_kwargs(
@@ -25,6 +25,10 @@ def prepare_search_kwargs(
         filter_search_kwargs = deepcopy(base_search_kwargs)
         filter_search_kwargs[f"{filter_key}_ids"] = batch_filter_options
         search_kwargs.append(filter_search_kwargs)
+
+    filter_search_kwargs = deepcopy(base_search_kwargs)
+    filter_search_kwargs["brand_ids"] = [VINTAGE_BRAND_ID]
+    search_kwargs.append(filter_search_kwargs)
 
     return search_kwargs
 

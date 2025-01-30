@@ -4,7 +4,7 @@ sys.path.append("../")
 
 from typing import List, Tuple, Dict
 
-import tqdm, json, os
+import tqdm, json, os, argparse
 from vinted import Vinted
 import src
 
@@ -14,6 +14,15 @@ FILTER_BATCH_SIZE = 3
 UPLOAD_EVERY = 500
 ONLY_DESIGNERS = False
 FILTER_BY_DEFAULT = []
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--women", default=True, type=lambda x: x.lower() == "true")
+    parser.add_argument("--only_vintage", default=False, type=lambda x: x.lower() == "true")
+    args = parser.parse_args()
+
+    return vars(args)
 
 
 def initialize() -> Tuple:
@@ -64,7 +73,7 @@ def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, b
     return inserted, uploaded
 
 
-def main(women: bool):
+def main(women: bool, only_vintage: bool):
     global bq_client, vinted_client
     bq_client, vinted_client, filter_by = initialize()
     catalogs = load_catalogs(women)
@@ -90,6 +99,7 @@ def main(women: bool):
                 filter_key=filter_key,
                 filters=filters,
                 batch_size=FILTER_BATCH_SIZE,
+                only_vintage=only_vintage,
             )
 
             for search_kwargs in search_kwargs_list:
@@ -166,5 +176,5 @@ def main(women: bool):
 
 
 if __name__ == "__main__":
-    main(women=True)
-    main(women=False)
+    kwargs = parse_args()
+    main(**kwargs)

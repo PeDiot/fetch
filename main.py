@@ -80,7 +80,7 @@ def main(women: bool, only_vintage: bool):
 
     print(f"women: {women} | filter_by: {filter_by} | catalogs: {len(catalogs)}")
     loop = tqdm.tqdm(iterable=catalogs, total=len(catalogs))
-    visited, inserted, n = [], 0, 0
+    visited, inserted, n, n_success = [], 0, 0, 0
 
     for entry in loop:
         items, images = [], []
@@ -116,6 +116,7 @@ def main(women: bool, only_vintage: bool):
                     n += 1
 
                     try:
+                        n_success += 1
                         item_entry, image_entry = src.items.parse(item, catalog_id)
                         item_id = item_entry.get("vinted_id")
 
@@ -138,6 +139,8 @@ def main(women: bool, only_vintage: bool):
                         f"Catalog: {catalog_title} | "
                         f"Filter: {filter_key} | "
                         f"Processed: {n} | "
+                        f"Success: {n_success} | "
+                        f"Success rate: {n_success / n:.2f} | "
                         f"Upload: {uploaded} | "
                         f"Inserted rows: {inserted} | "
                     )

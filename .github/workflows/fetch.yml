@@ -3,7 +3,7 @@ name: Fetch
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 */2 * *'  # Run at 00:00 UTC every 2 days
+    - cron: '0 0 * * *'
 
 jobs:
   fetch-combinations:

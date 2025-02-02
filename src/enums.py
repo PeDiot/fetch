@@ -8,6 +8,7 @@ CATALOG_TABLE_ID = "catalog"
 ITEM_TABLE_ID = "item"
 IMAGE_TABLE_ID = "image"
 CATEGORY_TABLE_ID = "category"
+LIKES_TABLE_ID = "likes"
 
 STAGING_ITEM_TABLE_ID = "item_staging"
 STAGING_IMAGE_TABLE_ID = "image_staging"

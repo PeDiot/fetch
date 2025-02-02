@@ -64,8 +64,21 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
         "created_at": created_at,
     }
 
-    return item_entry, image_entry
+    likes_entry = {
+        "vinted_id": str(item.id),
+        "count": _parse_likes(item),
+        "created_at": created_at,
+    }
+
+    return item_entry, image_entry, likes_entry
 
 
 def _parse_size(size: str) -> str:
     return size.split(" / ")[0].replace(",", ".")
+
+
+def _parse_likes(item: Item) -> int:
+    try: 
+        return int(item.favourite_count)
+    except:
+        return 0

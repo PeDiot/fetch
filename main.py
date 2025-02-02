@@ -51,7 +51,7 @@ def load_catalogs(women: bool) -> List[Dict]:
     )
 
 
-def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, bool]:
+def upload(inserted: int, items: List[Dict], images: List[Dict], likes: List[Dict]) -> Tuple[int, bool]:
     uploaded = False
 
     if src.bigquery.upload(
@@ -68,7 +68,13 @@ def upload(inserted: int, items: List[Dict], images: List[Dict]) -> Tuple[int, b
             table_id=src.enums.STAGING_IMAGE_TABLE_ID,
             rows=images,
         ):
-            uploaded = True
+            if src.bigquery.upload(
+                client=bq_client,
+                dataset_id=src.enums.DATASET_ID,
+                table_id=src.enums.LIKES_TABLE_ID,
+                rows=likes,
+            ):
+                uploaded = True
 
     return inserted, uploaded
 
@@ -83,7 +89,7 @@ def main(women: bool, only_vintage: bool):
     visited, inserted, n, n_success = [], 0, 0, 0
 
     for entry in loop:
-        items, images = [], []
+        items, images, likes = [], [], []
         catalog_title = entry.get("title")
         catalog_id = entry.get("id")
 
@@ -117,7 +123,7 @@ def main(women: bool, only_vintage: bool):
 
                     try:
                         n_success += 1
-                        item_entry, image_entry = src.items.parse(item, catalog_id)
+                        item_entry, image_entry, likes_entry = src.items.parse(item, catalog_id)
                         item_id = item_entry.get("vinted_id")
 
                         if item_id in visited:
@@ -125,14 +131,15 @@ def main(women: bool, only_vintage: bool):
 
                         items.append(item_entry)
                         images.append(image_entry)
+                        likes.append(likes_entry)
                         visited.append(item_id)
 
                     except:
                         continue
 
                     if n % UPLOAD_EVERY == 0:
-                        inserted, uploaded = upload(inserted, items, images)
-                        items, images = [], []
+                        inserted, uploaded = upload(inserted, items, images, likes)
+                        items, images, likes = [], [], []
 
                     loop.set_description(
                         f"Women: {women} | "

@@ -153,7 +153,7 @@ def main(women: bool, only_vintage: bool):
                     )
 
     if len(items) > 0 and len(images) > 0:
-        inserted, uploaded = upload(inserted, items, images)
+        inserted, uploaded = upload(inserted, items, images, likes)
         loop.set_description(f"Upload: {uploaded} | " f"Inserted rows: {inserted} | ")
 
     for table_id, reference_field in zip(

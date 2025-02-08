@@ -125,8 +125,12 @@ def main(women: bool, only_vintage: bool):
                         n_success += 1
                         item_entry, image_entry, likes_entry = src.items.parse(item, catalog_id)
                         item_id = item_entry.get("vinted_id")
+                        item_url = item_entry.get("url")
 
-                        if item_id in visited:
+                        if not item_url or not item_id or item_id in visited:
+                            continue
+
+                        if not src.status.is_available(vinted_client, item_id, item_url):
                             continue
 
                         items.append(item_entry)

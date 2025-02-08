@@ -124,19 +124,18 @@ def main(women: bool, only_vintage: bool):
                     try:
                         n_success += 1
                         item_entry, image_entry, likes_entry = src.items.parse(item, catalog_id)
-                        item_id = item_entry.get("vinted_id")
-                        item_url = item_entry.get("url")
-
-                        if not item_url or not item_id or item_id in visited:
+                        
+                        if not item_entry or not image_entry or not likes_entry:
                             continue
-
-                        if not src.status.is_available(vinted_client, item_id, item_url):
+                        
+                        vinted_id = item_entry.get("vinted_id")
+                        if vinted_id in visited:
                             continue
 
                         items.append(item_entry)
                         images.append(image_entry)
                         likes.append(likes_entry)
-                        visited.append(item_id)
+                        visited.append(vinted_id)
 
                     except:
                         continue

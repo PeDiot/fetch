@@ -35,16 +35,28 @@ def prepare_search_kwargs(
     return search_kwargs
 
 
-def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
+def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict, Dict]:
+    vinted_id = str(item.id)
+    if not vinted_id:
+        return None, None, None
+
+    image_url = item.photo.url
+    if not image_url:
+        return None, None, None
+    
+    item_url = item.url
+    if not item_url:
+        return None, None, None
+
     item_id = str(uuid.uuid4())
     created_at = datetime.datetime.now().isoformat()
 
     item_entry = {
         "id": item_id,
-        "vinted_id": str(item.id),
+        "vinted_id": vinted_id,
         "catalog_id": catalog_id,
         "title": item.title,
-        "url": item.url,
+        "url": item_url,
         "price": float(item.price.amount),
         "currency": item.price.currency_code,
         "brand": item.brand_title,
@@ -57,8 +69,8 @@ def parse(item: Item, catalog_id: int) -> Tuple[Dict, Dict]:
 
     image_entry = {
         "id": str(uuid.uuid4()),
-        "vinted_id": str(item.id),
-        "url": item.photo.url,
+        "vinted_id": vinted_id,
+        "url": image_url,
         "nobg": False,
         "size": "original",
         "created_at": created_at,

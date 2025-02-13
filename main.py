@@ -123,7 +123,7 @@ def process_search_response(
         src.utils.random_sleep()
         return item_entries, image_entries, likes_entries
 
-    elif response.status_code == 200:
+    elif response.status_code == 200 and isinstance(response.data, dict):
         items = response.data.get("items", [])
         loop.set_description(
             f"Catalog: {catalog_title} | Filter: {filter_key} | Items: {len(items)}"

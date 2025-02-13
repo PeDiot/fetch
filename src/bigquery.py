@@ -33,7 +33,9 @@ def load_table(
         query += f" WHERE {' AND '.join(conditions)}"
 
     if order_by:
-        query += f" ORDER BY {order_by} {'DESC' if descending else 'ASC'}"
+        query += f" ORDER BY {order_by}"
+        if descending is not None:
+            query += f" {'DESC' if descending else 'ASC'}"
 
     if limit:
         query += f" LIMIT {limit}"
@@ -50,24 +52,12 @@ def load_table(
 def upload(
     client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]
 ) -> bool:
-    table_path = f"`{PROJECT_ID}.{dataset_id}.{table_id}`"
-
-    fields = f"{tuple(rows[0].keys())}".replace("'", "")
-    values = [f"{_preprocess_null_values(row.values())}" for row in rows]
-    values = "\n\t" + ",\n\t".join(values)
-
-    query = f""" 
-    INSERT INTO 
-    {table_path}
-    {fields}
-    VALUES {values}; 
-    """
-    query = query.replace("'NULL'", "NULL")
-
     try:
-        client.query(query).result()
-        return True
-
+        errors = client.insert_rows_json(
+            table=f"{PROJECT_ID}.{dataset_id}.{table_id}", 
+            json_rows=rows
+        )
+        return len(errors) == 0
     except Exception as e:
         print(e)
         return False
@@ -92,7 +82,7 @@ def insert_staging_rows(
         return -1
 
 
-def restart_staging_table(
+def reset_staging_table(
     client: bigquery.Client,
     dataset_id: str,
     table_id: str,
@@ -108,7 +98,3 @@ def restart_staging_table(
     except Exception as e:
         print(e)
         return False
-
-
-def _preprocess_null_values(values: Iterable) -> Tuple:
-    return tuple([value if value is not None else "NULL" for value in values])

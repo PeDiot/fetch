@@ -50,19 +50,7 @@ def load_table(
 def upload(
     client: bigquery.Client, dataset_id: str, table_id: str, rows: List[Dict]
 ) -> bool:
-    table_path = f"`{PROJECT_ID}.{dataset_id}.{table_id}`"
-
-    fields = f"{tuple(rows[0].keys())}".replace("'", "")
-    values = [f"{_preprocess_null_values(row.values())}" for row in rows]
-    values = "\n\t" + ",\n\t".join(values)
-
-    query = f""" 
-    INSERT INTO 
-    {table_path}
-    {fields}
-    VALUES {values}; 
-    """
-    query = query.replace("'NULL'", "NULL")
+    query = _upload_query_from_rows(dataset_id, table_id, rows)
 
     try:
         client.query(query).result()
@@ -108,6 +96,23 @@ def restart_staging_table(
     except Exception as e:
         print(e)
         return False
+
+
+def _upload_query_from_rows(dataset_id: str, table_id: str, rows: List[Dict]) -> str:
+    table_path = f"`{PROJECT_ID}.{dataset_id}.{table_id}`"
+
+    fields = f"{tuple(rows[0].keys())}".replace("'", "")
+    values = [f"{_preprocess_null_values(row.values())}" for row in rows]
+    values = "\n\t" + ",\n\t".join(values)
+
+    query = f""" 
+    INSERT INTO 
+    {table_path}
+    {fields}
+    VALUES {values}; 
+    """
+
+    return query.replace("'NULL'", "NULL")
 
 
 def _preprocess_null_values(values: Iterable) -> Tuple:

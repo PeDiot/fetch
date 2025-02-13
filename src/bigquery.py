@@ -33,7 +33,9 @@ def load_table(
         query += f" WHERE {' AND '.join(conditions)}"
 
     if order_by:
-        query += f" ORDER BY {order_by} {'DESC' if descending else 'ASC'}"
+        query += f" ORDER BY {order_by}"
+        if descending is not None:
+            query += f" {'DESC' if descending else 'ASC'}"
 
     if limit:
         query += f" LIMIT {limit}"
@@ -55,7 +57,6 @@ def upload(
             table=f"{PROJECT_ID}.{dataset_id}.{table_id}", 
             json_rows=rows
         )
-        print(errors)
         return len(errors) == 0
     except Exception as e:
         print(e)
@@ -81,7 +82,7 @@ def insert_staging_rows(
         return -1
 
 
-def restart_staging_table(
+def reset_staging_table(
     client: bigquery.Client,
     dataset_id: str,
     table_id: str,

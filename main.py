@@ -9,8 +9,7 @@ import src
 
 DOMAIN = "fr"
 FILTER_BATCH_SIZE = 3
-UPLOAD_EVERY = 1000
-INSERT_EVERY = 10000
+INSERT_EVERY_CATALOG = 10
 ONLY_DESIGNERS = False
 FILTER_BY_DEFAULT = []
 
@@ -49,6 +48,7 @@ def load_catalogs(women: bool) -> List[Dict]:
         client=bq_client,
         table_id=src.enums.CATALOG_TABLE_ID,
         conditions=conditions,
+        order_by="RAND()",
     )
 
 
@@ -80,7 +80,7 @@ def upload(
     return num_uploaded
 
 
-def insert_and_clear_staging(table_id: str, reference_field: str) -> int:
+def insert_staging_rows(table_id: str, reference_field: str) -> int:
     num_inserted = src.bigquery.insert_staging_rows(
         client=bq_client,
         dataset_id=src.enums.DATASET_ID,
@@ -88,17 +88,7 @@ def insert_and_clear_staging(table_id: str, reference_field: str) -> int:
         reference_field=reference_field,
     )
 
-    if num_inserted == -1:
-        return 0
-
-    if not src.bigquery.restart_staging_table(
-        client=bq_client,
-        dataset_id=src.enums.DATASET_ID,
-        table_id=table_id,
-    ):
-        return 0
-
-    return num_inserted
+    return max(num_inserted, 0)
 
 
 def process_item(
@@ -183,13 +173,14 @@ def update_progress(
     num_uploaded: int,
     num_inserted: int,
 ) -> None:
+    success_rate = n_success / n if n > 0 else 0
     loop.set_description(
         f"Women: {women} | "
         f"Catalog: {catalog_title} | "
         f"Filter: {filter_key} | "
         f"Processed: {n} | "
         f"Success: {n_success} | "
-        f"Success rate: {n_success / n:.2f} | "
+        f"Success rate: {success_rate:.2f} | "
         f"Uploaded: {num_uploaded} | "
         f"Inserted: {num_inserted} | "
     )
@@ -205,9 +196,10 @@ def main(women: bool, only_vintage: bool):
 
     num_uploaded, num_inserted = 0, 0
     n, n_success = 0, 0
-    visited = []
+    counter, visited = 0, []
 
     for entry in loop:
+        counter += 1
         item_entries, image_entries, likes_entries = [], [], []
         catalog_title = entry.get("title")
         catalog_id = entry.get("id")
@@ -235,20 +227,6 @@ def main(women: bool, only_vintage: bool):
             n += len(response.data.get("items", []))
             n_success += len(new_items)
 
-            if n % UPLOAD_EVERY == 0:
-                num_uploaded += upload(item_entries, image_entries, likes_entries)
-                item_entries, image_entries, likes_entries = [], [], []
-
-            if n % INSERT_EVERY == 0:
-                for table_id, reference_field in zip(
-                    [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID],
-                    ["url", "vinted_id"],
-                ):
-                    if table_id == src.enums.ITEM_TABLE_ID:
-                        num_inserted += insert_and_clear_staging(
-                            table_id, reference_field
-                        )
-
             update_progress(
                 loop,
                 women,
@@ -259,17 +237,26 @@ def main(women: bool, only_vintage: bool):
                 num_uploaded,
                 num_inserted,
             )
+            
+        if len(item_entries) > 0 and len(image_entries) > 0:
+            num_uploaded += upload(item_entries, image_entries, likes_entries)
+            loop.set_description(f"Uploaded: {num_uploaded}")
 
-    if len(item_entries) > 0 and len(image_entries) > 0:
-        num_uploaded += upload(item_entries, image_entries, likes_entries)
-        loop.set_description(f"Uploaded: {num_uploaded}")
+        if counter % INSERT_EVERY_CATALOG == 0 or counter == len(catalogs):
+            for table_id, reference_field in zip(
+                [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], ["url", "vinted_id"]
+            ):
+                if table_id == src.enums.ITEM_TABLE_ID:
+                    num_inserted += insert_staging_rows(table_id, reference_field)
+                    loop.set_description(f"Inserted: {num_inserted}")
 
-        for table_id, reference_field in zip(
-            [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], ["url", "vinted_id"]
-        ):
-            if table_id == src.enums.ITEM_TABLE_ID:
-                num_inserted += insert_and_clear_staging(table_id, reference_field)
-                loop.set_description(f"Inserted: {num_inserted}")
+    for table_id in [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID]:
+        if src.bigquery.reset_staging_table(
+            client=bq_client,
+            dataset_id=src.enums.DATASET_ID,
+            table_id=table_id,
+        ): 
+            loop.set_description(f"{table_id}: reset")
 
 
 if __name__ == "__main__":

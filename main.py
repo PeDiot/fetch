@@ -110,13 +110,14 @@ def process_item(
 
 
 def process_search_response(
-    response: Dict,
+    response: src.vinted.VintedResponse,
     catalog_id: int,
     visited: List[int],
     catalog_title: str,
     filter_key: str,
     loop: tqdm.tqdm,
 ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    global n, n_success
     item_entries, image_entries, likes_entries = [], [], []
 
     if response.status_code == 403:
@@ -130,10 +131,12 @@ def process_search_response(
         )
 
         for item in items:
+            n += 1
             item_entry, image_entry, likes_entry, success = process_item(
                 item, catalog_id, visited
             )
             if success:
+                n_success += 1
                 item_entries.append(item_entry)
                 image_entries.append(image_entry)
                 likes_entries.append(likes_entry)
@@ -195,8 +198,9 @@ def main(women: bool, only_vintage: bool):
     loop = tqdm.tqdm(iterable=catalogs, total=len(catalogs))
 
     num_uploaded, num_inserted = 0, 0
-    n, n_success = 0, 0
-    counter, visited = 0, []
+
+    global n, n_success, counter, visited
+    n, n_success, counter, visited = 0, 0, 0, []
 
     for entry in loop:
         counter += 1
@@ -212,6 +216,7 @@ def main(women: bool, only_vintage: bool):
 
         for search_kwargs in search_kwargs_list:
             response = vinted_client.search(**search_kwargs)
+
             new_items, new_images, new_likes = process_search_response(
                 response,
                 catalog_id,
@@ -224,8 +229,6 @@ def main(women: bool, only_vintage: bool):
             item_entries.extend(new_items)
             image_entries.extend(new_images)
             likes_entries.extend(new_likes)
-            n += len(response.data.get("items", []))
-            n_success += len(new_items)
 
             update_progress(
                 loop,

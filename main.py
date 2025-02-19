@@ -258,6 +258,7 @@ def main(women: bool, only_vintage: bool):
             client=bq_client,
             dataset_id=src.enums.DATASET_ID,
             table_id=table_id,
+            field_id="vinted_id",
         ): 
             loop.set_description(f"{table_id}: reset")
 

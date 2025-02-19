@@ -29,7 +29,6 @@ class Vinted:
         self,
         endpoint: Endpoints,
         format_values=None,
-        wanted_status_code: int = 200,
         *args,
         **kwargs,
     ) -> VintedResponse:

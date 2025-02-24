@@ -89,12 +89,8 @@ def reset_staging_table(
     field_id: str
 ) -> bool:
     query = f"""
-    DELETE FROM `{PROJECT_ID}.{dataset_id}.{table_id}_staging` s
-    WHERE EXISTS (
-    SELECT 1 
-    FROM `{PROJECT_ID}.{dataset_id}.{table_id}` i 
-    WHERE i.{field_id} = s.{field_id}
-    );
+    CREATE OR REPLACE TABLE `{PROJECT_ID}.{dataset_id}.{table_id}_staging` AS
+    SELECT * FROM `{PROJECT_ID}.{dataset_id}.{table_id}` LIMIT 0;
     """
 
     try:

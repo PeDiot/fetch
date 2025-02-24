@@ -39,6 +39,7 @@ def parse_item(item: Dict, catalog_id: int) -> Tuple[Dict, Dict, Dict]:
 
     item_id = str(uuid.uuid4())
     created_at = datetime.datetime.now().isoformat()
+    unix_created_at = int(datetime.datetime.now().timestamp())
 
     item_entry = {
         "id": item_id,
@@ -54,6 +55,7 @@ def parse_item(item: Dict, catalog_id: int) -> Tuple[Dict, Dict, Dict]:
         "is_available": True,
         "created_at": created_at,
         "updated_at": created_at,
+        "unix_created_at": unix_created_at,
     }
 
     image_entry = {

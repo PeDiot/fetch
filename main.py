@@ -12,13 +12,22 @@ FILTER_BATCH_SIZE = 3
 INSERT_EVERY_CATALOG = 10
 ONLY_DESIGNERS = False
 FILTER_BY_DEFAULT = []
+REFERENCE_FIELD = "vinted_id"
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--women", default=True, type=lambda x: x.lower() == "true")
     parser.add_argument(
-        "--only_vintage", default=False, type=lambda x: x.lower() == "true"
+        "--women",
+        "-w", 
+        default=True,
+        type=lambda x: x.lower() == "true"
+    )
+    parser.add_argument(
+        "--only_vintage",
+        "-v", 
+        default=False, 
+        type=lambda x: x.lower() == "true"
     )
     args = parser.parse_args()
 
@@ -28,7 +37,6 @@ def parse_args():
 def initialize() -> Tuple:
     secrets = json.loads(os.getenv("SECRETS_JSON"))
     gcp_credentials = secrets.get("GCP_CREDENTIALS")
-    gcp_credentials["private_key"] = gcp_credentials["private_key"].replace("\\n", "\n")
 
     bq_client = src.bigquery.init_client(credentials_dict=gcp_credentials)
     vinted_client = src.vinted.Vinted(domain=DOMAIN)
@@ -153,6 +161,7 @@ def process_catalog_filters(
     )
 
     search_kwargs_list = []
+
     for filter_key in filter_by_updated:
         search_kwargs = src.utils.prepare_search_kwargs(
             catalog_id=catalog_id,
@@ -246,19 +255,17 @@ def main(women: bool, only_vintage: bool):
             loop.set_description(f"Uploaded: {num_uploaded}")
 
         if counter % INSERT_EVERY_CATALOG == 0 or counter == len(catalogs):
-            for table_id, reference_field in zip(
-                [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID], ["url", "vinted_id"]
-            ):
-                if table_id == src.enums.ITEM_TABLE_ID:
-                    num_inserted += insert_staging_rows(table_id, reference_field)
-                    loop.set_description(f"Inserted: {num_inserted}")
+            inserted_items = insert_staging_rows(src.enums.ITEM_TABLE_ID, REFERENCE_FIELD)
+            inserted_images = insert_staging_rows(src.enums.IMAGE_TABLE_ID, REFERENCE_FIELD)
+            num_inserted += inserted_items
+            loop.set_description(f"Inserted: {num_inserted}")
 
     for table_id in [src.enums.ITEM_TABLE_ID, src.enums.IMAGE_TABLE_ID]:
         if src.bigquery.reset_staging_table(
             client=bq_client,
             dataset_id=src.enums.DATASET_ID,
             table_id=table_id,
-            field_id="vinted_id",
+            field_id=REFERENCE_FIELD,
         ): 
             loop.set_description(f"{table_id}: reset")
 

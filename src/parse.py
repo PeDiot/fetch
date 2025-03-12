@@ -18,8 +18,16 @@ def parse_filters(response: VintedResponse) -> Dict:
             filter_options = entry.get("options", [])
 
             if filter_options:
-                filter_option_ids = [option.get("id") for option in filter_options]
-                filters[filter_key] = filter_option_ids
+                option_ids, option_titles = [], []
+                
+                for option in filter_options:
+                    option_ids.append(option.get("id"))
+                    option_titles.append(option.get("title"))
+
+                filters[filter_key] = {
+                    "id": option_ids,
+                    "title": option_titles,
+                }
 
     return filters
 

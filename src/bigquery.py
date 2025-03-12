@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Iterable, Tuple
+from typing import List, Dict, Union
 
 from google.oauth2 import service_account
 from google.cloud import bigquery
@@ -6,6 +6,8 @@ from .enums import *
 
 
 def init_client(credentials_dict: Dict) -> bigquery.Client:
+    credentials_dict["private_key"] = credentials_dict["private_key"].replace("\\n", "\n")
+
     credentials = service_account.Credentials.from_service_account_info(
         credentials_dict
     )

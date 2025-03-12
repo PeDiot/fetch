@@ -1,6 +1,8 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
+
+import random, time, json
 from copy import deepcopy
-import random, time
+from datetime import datetime
 from .enums import N_ITEMS_MAX, VINTAGE_BRAND_ID
 
 
@@ -35,7 +37,7 @@ def prepare_search_kwargs(
         return [filter_search_kwargs]
 
     search_kwargs = [base_search_kwargs]
-    filter_options = filters.get(filter_key, [])
+    filter_options = filters.get(filter_key, {}).get("id", [])
     filter_options = create_batches(filter_options, batch_size)
 
     for batch_filter_options in filter_options:
@@ -44,3 +46,34 @@ def prepare_search_kwargs(
         search_kwargs.append(filter_search_kwargs)
 
     return search_kwargs
+
+
+def update_filter_entries(
+    filter_data: Dict, 
+    catalog_id: int,
+    entries: List[Dict], 
+    index: List[int]
+) -> Tuple[List[Dict], List[int]]:
+    current_timestamp = datetime.now().isoformat()
+    iterator = zip(filter_data.get("id", []), filter_data.get("title", []))
+    
+    for id_, title_ in iterator:
+        if id_ not in index:
+            entries.append({
+                "id": id_, 
+                "catalog_id": catalog_id,
+                "title": title_, 
+                "created_at": current_timestamp,
+            })
+
+            index.append(id_)
+    
+    return entries, index
+
+
+def save_to_jsonl(data_list: List[Dict], filename: str, append: bool = False) -> None:
+    mode = "a" if append else "w"
+    with open(filename, mode, encoding="utf-8") as file:
+        for item in data_list:
+            json_str = json.dumps(item, ensure_ascii=False)
+            file.write(json_str + "\n")

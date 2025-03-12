@@ -1,7 +1,7 @@
 # .gitignore
 .DS_Store
 .ruff_cache/
-venv/
+data/
 secrets.json
 
 # Python
@@ -12,6 +12,6 @@ __pycache__/
 *.whl
 
 # Poetry
-.venv/
+venv/
 poetry.lock
 dist/

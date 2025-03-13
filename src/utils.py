@@ -40,6 +40,7 @@ def prepare_search_kwargs(
 
     if filter_options:
         search_kwargs = []
+        random.shuffle(filter_options)
         filter_options = create_batches(filter_options, batch_size)
 
         for batch_filter_options in filter_options:

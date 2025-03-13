@@ -1,9 +1,9 @@
-name: Fetch
+name: Fetch By Material
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 */1 * *'
+    - cron: '0 */12 * * *'
 
 jobs:
   fetch-combinations:
@@ -12,13 +12,9 @@ jobs:
       matrix:
         include:
           - women: "true"
-            only_vintage: "false"
-          - women: "true"
-            only_vintage: "true"
+            filter_by: "material"
           - women: "false"
-            only_vintage: "false"
-          - women: "false"
-            only_vintage: "true"
+            filter_by: "material"
 
     steps:
       - name: Checkout repository
@@ -31,7 +27,8 @@ jobs:
         run: |
           echo "Running with configuration:"
           echo "WOMEN: ${{ matrix.women }}"
-          echo "ONLY_VINTAGE: ${{ matrix.only_vintage }}"
+          echo "FILTER_BY: ${{ matrix.filter_by }}"
+          echo "ONLY_VINTAGE: false"
 
       - name: Build Docker Image
         run: docker build -t fetch .
@@ -39,4 +36,4 @@ jobs:
       - name: Run Docker Container
         env:
           SECRETS_JSON: ${{ secrets.SECRETS_JSON }}
-        run: docker run -e SECRETS_JSON -e WOMEN=${{ matrix.women }} -e ONLY_VINTAGE=${{ matrix.only_vintage }} fetch
+        run: docker run -e SECRETS_JSON -e WOMEN=${{ matrix.women }} -e ONLY_VINTAGE=false -e FILTER_BY=${{ matrix.filter_by }} fetch 

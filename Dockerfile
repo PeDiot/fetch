@@ -14,4 +14,4 @@ COPY main.py .
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["python3", "main.py", "--women", "${WOMEN}", "--only_vintage", "${ONLY_VINTAGE}"]
+ENTRYPOINT ["python3", "main.py", "--women", "${WOMEN}", "--only_vintage", "${ONLY_VINTAGE}", "--filter_by", "${FILTER_BY}"]

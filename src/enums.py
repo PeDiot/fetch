@@ -9,6 +9,7 @@ ITEM_TABLE_ID = "item"
 IMAGE_TABLE_ID = "image"
 CATEGORY_TABLE_ID = "category"
 LIKES_TABLE_ID = "likes"
+ITEM_DETAILS_TABLE_ID = "item_details"
 
 STAGING_ITEM_TABLE_ID = "item_staging"
 STAGING_IMAGE_TABLE_ID = "image_staging"

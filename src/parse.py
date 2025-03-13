@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, List
 
 import uuid, datetime
 from .enums import VALID_FILTER_KEYS
@@ -19,7 +19,7 @@ def parse_filters(response: VintedResponse) -> Dict:
 
             if filter_options:
                 option_ids, option_titles = [], []
-                
+
                 for option in filter_options:
                     option_ids.append(option.get("id"))
                     option_titles.append(option.get("title"))
@@ -32,18 +32,49 @@ def parse_filters(response: VintedResponse) -> Dict:
     return filters
 
 
-def parse_item(item: Dict, catalog_id: int) -> Tuple[Dict, Dict, Dict]:
+def parse_item(
+    item: Dict,
+    catalog_id: int,
+    visited: List[int],
+    material_id: Optional[int] = None,
+    pattern_id: Optional[int] = None,
+    color_id: Optional[int] = None,
+) -> Optional[Tuple[Dict, Dict, Dict, Dict]]:
+    try:
+        result = _parse_item(item, catalog_id, material_id, pattern_id, color_id)
+
+        if not result:
+            return
+
+        item_entry, image_entry, likes_entry, item_details_entry = result
+
+        if item_entry.get("vinted_id") in visited:
+            return
+
+        return item_entry, image_entry, likes_entry, item_details_entry
+
+    except:
+        return
+
+
+def _parse_item(
+    item: Dict,
+    catalog_id: int,
+    material_id: Optional[int] = None,
+    pattern_id: Optional[int] = None,
+    color_id: Optional[int] = None,
+) -> Tuple[Dict, Dict, Dict, Dict] | None:
     vinted_id = str(item.get("id"))
     if not vinted_id:
-        return None, None, None
+        return
 
     image_url = item.get("photo", {}).get("url")
     if not image_url:
-        return None, None, None
+        return
 
     item_url = item.get("url")
     if not item_url:
-        return None, None, None
+        return
 
     item_id = str(uuid.uuid4())
     created_at = datetime.datetime.now().isoformat()
@@ -81,7 +112,15 @@ def parse_item(item: Dict, catalog_id: int) -> Tuple[Dict, Dict, Dict]:
         "created_at": created_at,
     }
 
-    return item_entry, image_entry, likes_entry
+    item_details_entry = {
+        "item_id": item_id,
+        "material_id": material_id,
+        "pattern_id": pattern_id,
+        "color_id": color_id,
+        "created_at": created_at,
+    }
+
+    return (item_entry, image_entry, likes_entry, item_details_entry)
 
 
 def _parse_size(item: Dict) -> str:

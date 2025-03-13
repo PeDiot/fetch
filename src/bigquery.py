@@ -6,7 +6,9 @@ from .enums import *
 
 
 def init_client(credentials_dict: Dict) -> bigquery.Client:
-    credentials_dict["private_key"] = credentials_dict["private_key"].replace("\\n", "\n")
+    credentials_dict["private_key"] = credentials_dict["private_key"].replace(
+        "\\n", "\n"
+    )
 
     credentials = service_account.Credentials.from_service_account_info(
         credentials_dict
@@ -56,8 +58,7 @@ def upload(
 ) -> bool:
     try:
         errors = client.insert_rows_json(
-            table=f"{PROJECT_ID}.{dataset_id}.{table_id}", 
-            json_rows=rows
+            table=f"{PROJECT_ID}.{dataset_id}.{table_id}", json_rows=rows
         )
         return len(errors) == 0
     except Exception as e:
@@ -85,10 +86,7 @@ def insert_staging_rows(
 
 
 def reset_staging_table(
-    client: bigquery.Client,
-    dataset_id: str,
-    table_id: str,
-    field_id: str
+    client: bigquery.Client, dataset_id: str, table_id: str, field_id: str
 ) -> bool:
     query = f"""
     CREATE OR REPLACE TABLE `{PROJECT_ID}.{dataset_id}.{table_id}_staging` AS

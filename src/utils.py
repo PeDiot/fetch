@@ -36,38 +36,41 @@ def prepare_search_kwargs(
 
         return [filter_search_kwargs]
 
-    search_kwargs = [base_search_kwargs]
     filter_options = filters.get(filter_key, {}).get("id", [])
-    filter_options = create_batches(filter_options, batch_size)
 
-    for batch_filter_options in filter_options:
-        filter_search_kwargs = deepcopy(base_search_kwargs)
-        filter_search_kwargs[f"{filter_key}_ids"] = batch_filter_options
-        search_kwargs.append(filter_search_kwargs)
+    if filter_options:
+        search_kwargs = []
+        filter_options = create_batches(filter_options, batch_size)
 
-    return search_kwargs
+        for batch_filter_options in filter_options:
+            filter_search_kwargs = deepcopy(base_search_kwargs)
+            filter_search_kwargs[f"{filter_key}_ids"] = batch_filter_options
+            search_kwargs.append(filter_search_kwargs)
+
+            return search_kwargs
+
+    return [base_search_kwargs]
 
 
 def update_filter_entries(
-    filter_data: Dict, 
-    catalog_id: int,
-    entries: List[Dict], 
-    index: List[int]
+    filter_data: Dict, catalog_id: int, entries: List[Dict], index: List[int]
 ) -> Tuple[List[Dict], List[int]]:
     current_timestamp = datetime.now().isoformat()
     iterator = zip(filter_data.get("id", []), filter_data.get("title", []))
-    
+
     for id_, title_ in iterator:
         if id_ not in index:
-            entries.append({
-                "id": id_, 
-                "catalog_id": catalog_id,
-                "title": title_, 
-                "created_at": current_timestamp,
-            })
+            entries.append(
+                {
+                    "id": id_,
+                    "catalog_id": catalog_id,
+                    "title": title_,
+                    "created_at": current_timestamp,
+                }
+            )
 
             index.append(id_)
-    
+
     return entries, index
 
 

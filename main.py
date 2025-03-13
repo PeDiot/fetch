@@ -27,11 +27,13 @@ def parse_args():
     parser.add_argument(
         "--filter_by",
         "-fby",
-        choices=FILTER_BY_CHOICES,
-        default=None,
-        help="Filter criteria for scraping",
+        choices=FILTER_BY_CHOICES + ["None"],
+        default="None",
     )
     args = parser.parse_args()
+    
+    if args.filter_by == "None":
+        args.filter_by = None
 
     return vars(args)
 

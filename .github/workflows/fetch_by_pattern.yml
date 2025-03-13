@@ -36,4 +36,4 @@ jobs:
       - name: Run Docker Container
         env:
           SECRETS_JSON: ${{ secrets.SECRETS_JSON }}
-        run: docker run -e SECRETS_JSON -e WOMEN=${{ matrix.women }} -e ONLY_VINTAGE=false -e FILTER_BY=${{ matrix.filter_by }} fetch 
+        run: docker run -e SECRETS_JSON fetch --women ${{ matrix.women }} --only_vintage false --filter_by ${{ matrix.filter_by }} 

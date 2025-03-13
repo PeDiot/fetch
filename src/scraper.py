@@ -58,6 +58,13 @@ class VintedScraper:
                 catalog_id, filters, filter_by, only_vintage
             )
 
+            item_entries, image_entries, likes_entries, item_details_entries = (
+                [],
+                [],
+                [],
+                [],
+            )
+
             for search_kwargs in search_kwargs_list:
                 material_id = search_kwargs.get("material_ids", [None])[0]
                 pattern_id = search_kwargs.get("patterns_ids", [None])[0]
@@ -73,29 +80,53 @@ class VintedScraper:
                     continue
 
                 (
-                    item_entries,
-                    image_entries,
-                    likes_entries,
-                    item_details_entries,
+                    new_item_entries,
+                    new_image_entries,
+                    new_likes_entries,
+                    new_item_details_entries,
                 ) = results
-                self._update_progress(loop, women, catalog_title)
 
-                if len(item_entries) > 0 and len(image_entries) > 0:
-                    self.num_uploaded += self._upload(
-                        item_entries, image_entries, likes_entries, item_details_entries
-                    )
+                item_entries.extend(new_item_entries)
+                image_entries.extend(new_image_entries)
+                likes_entries.extend(new_likes_entries)
+                item_details_entries.extend(new_item_details_entries)
+
+                self._update_progress(
+                    loop,
+                    women,
+                    catalog_title,
+                    color_id,
+                    material_id,
+                    pattern_id,
+                )
+
+            if len(item_entries) > 0 and len(image_entries) > 0:
+                self.num_uploaded += self._upload(
+                    item_entries, image_entries, likes_entries, item_details_entries
+                )
 
             if self.counter % self.insert_every_catalog == 0 or self.counter == len(
                 catalogs
             ):
                 self._insert_from_staging()
 
-    def _update_progress(self, loop: Iterable, women: bool, catalog_title: str):
+    def _update_progress(
+        self,
+        loop: Iterable,
+        women: bool,
+        catalog_title: str,
+        color_id: Optional[int] = None,
+        material_id: Optional[int] = None,
+        pattern_id: Optional[int] = None,
+    ):
         success_rate = self.n_success / self.n if self.n > 0 else 0
 
         loop.set_description(
             f"Women: {women} | "
             f"Catalog: {catalog_title} | "
+            f"Color: {color_id} | "
+            f"Material: {material_id} | "
+            f"Pattern: {pattern_id} | "
             f"Processed: {self.n} | "
             f"Success: {self.n_success} | "
             f"Success rate: {success_rate:.2f} | "

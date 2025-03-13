@@ -26,6 +26,7 @@ def prepare_search_kwargs(
     filters: Dict,
     filter_key: Optional[str] = None,
     batch_size: int = 1,
+    max_filter_options: Optional[int] = 10,
     only_vintage: bool = False,
 ) -> List[Dict]:
     base_search_kwargs = {"catalog_ids": [catalog_id], "per_page": N_ITEMS_MAX}
@@ -37,6 +38,7 @@ def prepare_search_kwargs(
         return [filter_search_kwargs]
 
     filter_options = filters.get(filter_key, {}).get("id", [])
+    filter_options = _select_filter_options(filter_options, max_filter_options)
 
     if filter_options:
         search_kwargs = []
@@ -48,7 +50,7 @@ def prepare_search_kwargs(
             filter_search_kwargs[f"{filter_key}_ids"] = batch_filter_options
             search_kwargs.append(filter_search_kwargs)
 
-            return search_kwargs
+        return search_kwargs
 
     return [base_search_kwargs]
 
@@ -81,3 +83,12 @@ def save_to_jsonl(data_list: List[Dict], filename: str, append: bool = False) ->
         for item in data_list:
             json_str = json.dumps(item, ensure_ascii=False)
             file.write(json_str + "\n")
+
+
+def _select_filter_options(options: List[int], n: Optional[int] = None) -> List[int]:
+    if n is None:
+        return options
+
+    n = min(n, len(options))
+
+    return random.sample(options, n)

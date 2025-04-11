@@ -157,6 +157,6 @@ def _parse_currency(item: Dict) -> str:
 
 def _parse_brand(item: Dict) -> str:
     try:
-        return item.get("brand", {}).get("title")
+        return item.get("brand_title")
     except:
         return

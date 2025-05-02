@@ -3,7 +3,7 @@ name: Fetch By Color
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 */2 * *'
+    - cron: '0 0 * * *'
 
 jobs:
   fetch-combinations:

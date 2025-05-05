@@ -73,6 +73,7 @@ def insert_staging_rows(
     INSERT INTO `{PROJECT_ID}.{dataset_id}.{table_id}`
     SELECT * FROM `{PROJECT_ID}.{dataset_id}.{table_id}_staging`
     WHERE {reference_field} NOT IN (SELECT {reference_field} FROM `{PROJECT_ID}.{dataset_id}.{table_id}`)
+    ORDER BY RAND()
     """
 
     try:

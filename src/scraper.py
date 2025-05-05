@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple, Optional, Iterable
 
+import random
 from tqdm import tqdm
 from google.cloud import bigquery
 
@@ -142,6 +143,8 @@ class VintedScraper:
         item_details_entries: List[Dict],
     ) -> int:
         num_uploaded = 0
+
+        random.shuffle(item_entries)
 
         all_rows = [
             item_entries,

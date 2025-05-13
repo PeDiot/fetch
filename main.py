@@ -3,7 +3,7 @@ import sys
 sys.path.append("../")
 
 from typing import List, Tuple, Dict
-import json, os, argparse, random
+import json, os, argparse
 import src
 
 
@@ -49,7 +49,11 @@ def initialize_clients() -> Tuple:
 
 
 def load_catalogs(women: bool) -> List[Dict]:
-    conditions = [f"women = {women}", "is_valid = TRUE"]
+    conditions = [
+        f"women = {women}", 
+        "is_valid = TRUE", 
+        "is_active = TRUE"
+    ]
 
     return src.bigquery.load_table(
         client=bq_client,

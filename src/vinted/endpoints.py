@@ -9,6 +9,6 @@ class Endpoints(Enum):
     USERS = "/users"
     USER = "/users/{}"
     USER_FEEDBACKS = "/user_feedbacks"
-    USER_ITEMS = "/users/{}/items"
+    USER_ITEMS = "/wardrobe/{}/items"
     USER_FEEDBACKS_SUMMARY = "/user_feedbacks/summary"
     SEARCH_SUGGESTIONS = "/search_suggestions"
